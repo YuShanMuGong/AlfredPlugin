@@ -1,0 +1,2 @@
+# AlfredPlugin
+AlfredPlugin
