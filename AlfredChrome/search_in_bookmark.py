@@ -7,6 +7,7 @@ import time
 from abc import abstractmethod
 import sqlite3
 import collections
+from pypinyin import pinyin, Style
 
 # Chrome 书签文件地址
 
@@ -17,6 +18,31 @@ CHROME_BOOK_MARK_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/
 CHROME_BOOK_HISTORY_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/History"
 
 CHROME_HISTORY_DB_CACHE_PATH = os.path.expanduser("~") + "/logs/alfred_caches/"
+SYMBOL = u'~`!#$%^&*()_+-=|\';":/.,?><~·！@#￥%……&*（）——+-=“：’；、。，？》《{}【】[]'
+
+
+def get_word_pinyin(word):
+    res = pinyin(word, style=Style.NORMAL)
+    res_str = ""
+    for item in res:
+        if type(item) == list:
+            for i in item:
+                try:
+                    res_str += str(i)
+                except Exception:
+                    pass
+        else:
+            try:
+                res_str += str(item)
+            except Exception:
+                pass
+    return res_str.lower().decode("utf-8")
+
+
+def get_out_symbol(word):
+    for c in SYMBOL:
+        word = word.replace(c, "")
+    return word.strip()
 
 
 class Search():
@@ -26,6 +52,7 @@ class Search():
         pass
 
 
+# Chrome 拼音搜索书签
 class ChromeBookMarkSearch(Search):
 
     # 寻找关键字然后，返回找到的Chrome记录
@@ -45,9 +72,11 @@ class ChromeBookMarkSearch(Search):
         return body_list
 
     def __doFind(self, root, words, result_list):
+        # 如果类型是URL，则需要进行比对
         if "type" in root and root["type"] == "url":
             match_info = self.__match_words(root, words)
-            if match_info["match"]:
+            pinyin_match = self.__pinyin_match(root, words)
+            if match_info["match"] or pinyin_match["match"]:
                 result_list.append({"info": root, "weight": match_info["weight"]})
             return
         children = root["children"]
@@ -70,6 +99,22 @@ class ChromeBookMarkSearch(Search):
 
             if "url" in info:
                 if info["url"].find(word) != -1:
+                    weight += 1
+        return {"match": weight > 0, "weight": weight}
+
+    @staticmethod
+    def __pinyin_match(info, words):
+        namePinyin = ""
+        if "name" in info:
+            # 返回的拼音是纯小写的，没有标点符号的
+            namePinyin = get_word_pinyin(get_out_symbol(info["name"]))
+        weight = 0
+        for word in words:
+            low_word = word.lower()
+            if namePinyin and namePinyin.find(low_word) != -1:
+                weight += 1
+            if "url" in info:
+                if info["url"].lower().find(low_word) != -1:
                     weight += 1
         return {"match": weight > 0, "weight": weight}
 
@@ -103,7 +148,7 @@ class ChromeHistorySearch(Search):
             if not is_first:
                 condition = condition + " and "
             is_first = False
-            condition = condition + "(title like '%" + word + "%')"
+            condition = condition + "(lower(title) like '%" + word.lower() + "%')"
 
         return "SELECT * from urls WHERE (" + condition + ") ORDER BY visit_count desc , last_visit_time desc limit 20"
 
@@ -114,7 +159,7 @@ class ChromeHistorySearch(Search):
             if not is_first:
                 condition = condition + " or "
             is_first = False
-            condition = condition + "(title like '%" + word + "%')"
+            condition = condition + "(lower(title) like '%" + word.lower() + "%')"
 
         return "SELECT * from urls WHERE (" + condition + ") ORDER BY visit_count desc , last_visit_time desc limit 20"
 
@@ -137,7 +182,7 @@ class ChromeHistorySearch(Search):
 
 
 if __name__ == '__main__':
-    word = u"bi"
+    word = u"qqyouxiang"
     result1 = ChromeBookMarkSearch().find([word])
     result2 = ChromeHistorySearch().find([word])
     result = collections.OrderedDict()
