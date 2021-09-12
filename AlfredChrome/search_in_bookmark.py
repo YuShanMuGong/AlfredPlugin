@@ -40,7 +40,7 @@ class ChromeBookMarkSearch(Search):
         body_list = []
         for item in result_list:
             info = item["info"]
-            r = {"title": info["name"], "url": info["url"]}
+            r = {"title": info["name"], "url": info["url"], "from": "bookmark"}
             body_list.append(r)
         return body_list
 
@@ -64,8 +64,10 @@ class ChromeBookMarkSearch(Search):
         weight = 0
         for word in words:
             if "name" in info:
-                if info["name"].find(word) != -1:
+                name = info["name"]
+                if name.find(word) != -1:
                     weight += 1
+
             if "url" in info:
                 if info["url"].find(word) != -1:
                     weight += 1
@@ -90,7 +92,7 @@ class ChromeHistorySearch(Search):
                     result[key] = item
         body_list = []
         for value in result.values():
-            r = {"title": value[2], "url": value[1]}
+            r = {"title": value[2], "url": value[1], "from": "history"}
             body_list.append(r)
         return body_list
 
@@ -135,7 +137,7 @@ class ChromeHistorySearch(Search):
 
 
 if __name__ == '__main__':
-    word = u"测试"
+    word = u"bi"
     result1 = ChromeBookMarkSearch().find([word])
     result2 = ChromeHistorySearch().find([word])
     result = collections.OrderedDict()
@@ -147,4 +149,4 @@ if __name__ == '__main__':
         if not result.has_key(key):
             result[key] = r
 
-    print str(json.dumps(result)).decode("unicode-escape")
+    print str(json.dumps(result.values())).decode("unicode-escape")
