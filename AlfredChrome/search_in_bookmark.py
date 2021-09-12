@@ -1,12 +1,12 @@
 # coding=utf-8
+
 import json
 import io
 import os
-import shutil
-import time
+import chrome_util
 from abc import abstractmethod
-import sqlite3
 import collections
+import search_icon
 from pypinyin import pinyin, Style
 
 # Chrome 书签文件地址
@@ -15,9 +15,7 @@ from pypinyin import pinyin, Style
 CHROME_PATH = "/Library/Application Support/Google/Chrome"
 
 CHROME_BOOK_MARK_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/Bookmarks"
-CHROME_BOOK_HISTORY_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/History"
-
-CHROME_HISTORY_DB_CACHE_PATH = os.path.expanduser("~") + "/logs/alfred_caches/"
+CHROME_BOOK_HISTORY_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default"
 
 # 各种中英文的符号字符，在做拼音转换的时候会去除符号字符
 SYMBOL = u'~`!#$%^&*()_+-=|\';":/.,?><~·！@#￥%……&*（）——+-=“：’；、。，？》《{}【】[]'
@@ -66,10 +64,19 @@ class ChromeBookMarkSearch(Search):
         for sub_root in roots.values():
             self.__doFind(sub_root, words, result_list)
         result_list.sort(lambda e, x: (e["weight"]), reverse=True)
+        urls = []
+        for item in result_list:
+            info = item["info"]
+            urls.append(info["url"])
+        urls_dict = search_icon.get_domain_icon(urls)
         body_list = []
         for item in result_list:
             info = item["info"]
-            r = {"title": info["name"], "url": info["url"], "from": "bookmark"}
+            r = {"title": info["name"],
+                 "url": info["url"],
+                 "from": "bookmark",
+                 "icon": urls_dict.get(info["url"], "")
+                 }
             body_list.append(r)
         return body_list
 
@@ -125,7 +132,7 @@ class ChromeHistorySearch(Search):
 
     def find(self, words):
         result = collections.OrderedDict()
-        with self.__get_db_conn() as conn:
+        with chrome_util.get_db_conn("History", CHROME_BOOK_HISTORY_PATH) as conn:
             cursor = conn.cursor()
             cursor.execute(self.__build_and_query_sql(words))
             r1 = cursor.fetchall()
@@ -138,8 +145,16 @@ class ChromeHistorySearch(Search):
                 if not result.has_key(key):
                     result[key] = item
         body_list = []
+        urls = []
         for value in result.values():
-            r = {"title": value[2], "url": value[1], "from": "history"}
+            urls.append(value[1])
+        urls_dict = search_icon.get_domain_icon(urls)
+        for value in result.values():
+            r = {"title": value[2],
+                 "url": value[1],
+                 "from": "history",
+                 "icon": urls_dict.get(value[1], "")
+                 }
             body_list.append(r)
         return body_list
 
@@ -164,23 +179,6 @@ class ChromeHistorySearch(Search):
             condition = condition + "(lower(title) like '%" + word.lower() + "%')"
 
         return "SELECT * from urls WHERE (" + condition + ") ORDER BY visit_count desc , last_visit_time desc limit 20"
-
-    def __get_db_conn(self):
-        db_file_path = self.__get_db_file_path()
-        return sqlite3.connect(db_file_path)
-
-    def __get_db_file_path(self):
-        cache_folder = os.path.exists(CHROME_HISTORY_DB_CACHE_PATH)
-        if not cache_folder:
-            os.makedirs(CHROME_HISTORY_DB_CACHE_PATH)
-        cache_file_path = CHROME_HISTORY_DB_CACHE_PATH + "history"
-        if os.path.isfile(cache_file_path) and time.time() - os.path.getmtime(cache_file_path) < 30:
-            return cache_file_path
-        try:
-            shutil.copy(CHROME_BOOK_HISTORY_PATH, cache_file_path)
-        except:
-            raise IOError("read history from chrome fail")
-        return cache_file_path
 
 
 if __name__ == '__main__':
