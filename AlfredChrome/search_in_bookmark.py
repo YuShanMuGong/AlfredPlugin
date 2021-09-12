@@ -18,6 +18,8 @@ CHROME_BOOK_MARK_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/
 CHROME_BOOK_HISTORY_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/History"
 
 CHROME_HISTORY_DB_CACHE_PATH = os.path.expanduser("~") + "/logs/alfred_caches/"
+
+# 各种中英文的符号字符，在做拼音转换的时候会去除符号字符
 SYMBOL = u'~`!#$%^&*()_+-=|\';":/.,?><~·！@#￥%……&*（）——+-=“：’；、。，？》《{}【】[]'
 
 
@@ -182,7 +184,7 @@ class ChromeHistorySearch(Search):
 
 
 if __name__ == '__main__':
-    word = u"qqyouxiang"
+    word = u"zujian"
     result1 = ChromeBookMarkSearch().find([word])
     result2 = ChromeHistorySearch().find([word])
     result = collections.OrderedDict()
