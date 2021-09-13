@@ -18,6 +18,10 @@ __CACHE_PATH = os.path.expanduser("~") + "/logs/alfred_caches/"
 
 # 返回值 [{url,icon}]
 def get_domain_icon(urls):
+    return __get_icon_from_chrome_cache(urls)
+
+
+def __get_icon_from_internet(urls):
     # 确保Cache文件夹一定存在
     icon_cache_path = __CACHE_PATH + "icons/"
     cache_folder = os.path.exists(icon_cache_path)
@@ -59,6 +63,42 @@ def get_domain_icon(urls):
     return result
 
 
+# 从 Chrome 缓存中获取网页的 ICON
+def __get_icon_from_chrome_cache(urls):
+    icon_cache_path = __CACHE_PATH + "icons/"
+    cache_folder = os.path.exists(icon_cache_path)
+    if not cache_folder:
+        os.makedirs(icon_cache_path)
+    result = {}
+    with chrome_util.get_db_conn("Favicons", CHROME_BOOK_HISTORY_PATH) as conn:
+        for url in urls:
+            domain = __get_domain_str(url)
+            path = icon_cache_path + domain + ".png"
+            if os.path.isfile(path) and os.path.getsize(path) > 0:
+                result[url] = path
+                continue
+            cursor = conn.cursor()
+            try:
+                cursor.execute(__get_icon_sql(domain))
+                rows = cursor.fetchall()
+                if not rows:
+                    continue
+                icon_data = rows[0][0]
+                with io.open(path, "ab+") as f:
+                    f.write(icon_data)
+                    f.flush()
+                    f.close()
+                result[url] = path
+            except Exception as e:
+                sys.stdout.write(str(e))
+                if os.path.exists(path):
+                    os.remove(path)
+                pass
+            finally:
+                cursor.close()
+    return result
+
+
 def __get_domain_str(url):
     url = url.strip()
     http_index = url.find(HTTP_PREFIX)
@@ -80,6 +120,7 @@ def __get_domain_str(url):
         return url[0:first_pointer]
 
 
+# 获取 Icon的 URL
 def __get_icon_search_sql(key):
     sql = """SELECT url from icon_mapping a
         INNER JOIN favicons b
@@ -87,6 +128,17 @@ def __get_icon_search_sql(key):
         where lower(page_url) like '%{0}%'
         ORDER BY a.id desc
         limit 1"""
+    return sql.format(key)
+
+
+# 获取Icon的二进制数据
+def __get_icon_sql(key):
+    sql = """select b.image_data from favicons a 
+    inner join favicon_bitmaps b
+    on a.id = b.icon_id
+    where a.url like '%{0}%'
+    order by (b.width * b.height) desc 
+    limit 1"""
     return sql.format(key)
 
 

@@ -1,5 +1,5 @@
 # coding=utf-8
-
+import os
 import sys
 # 将本地的包，添加进入模块搜索
 sys.path.append("./site-packages")

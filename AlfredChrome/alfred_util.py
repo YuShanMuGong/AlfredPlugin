@@ -32,18 +32,26 @@ def get_alfred_out(infos):
         url = item["url"]
         icon = item.get("icon")
         default_icon = {"type": "filetype", "path": "public.png"}
+        sub_title = __get_sub_title(item.get("from",""))
         if icon:
             default_icon = {"type": "png", "path": icon}
         result.append(
             {
                 "type": "default",
                 "title": title,
-                "arg": "url|" + url,
+                "subtitle": sub_title,
+                "arg": url,
                 "icon": default_icon
             }
         )
     return json.dumps({"items": result})
 
+def __get_sub_title(data_from):
+    if data_from == "bookmark" or data_from == u"bookmark":
+        return u"来自书签"
+    if data_from == "history" or data_from == u"history":
+        return u"来自历史记录"
+    return "未知来源"
 
 # [[{},{}],[{}]] -> [{},{},{}]
 def merge_result(result_lists):
@@ -56,6 +64,7 @@ def merge_result(result_lists):
                 continue
             result_dict[item["title"]] = item
     return result_dict.values()
+
 
 if __name__ == "__main__":
     test_infos = [{"url": "baidu.com", "title": "baidu"}]

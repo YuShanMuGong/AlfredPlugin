@@ -16,6 +16,8 @@ CHROME_PATH = "/Library/Application Support/Google/Chrome"
 
 CHROME_BOOK_MARK_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/Bookmarks"
 CHROME_BOOK_HISTORY_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default"
+BOOK_MARK_DEFAULT_ICON = os.getcwd() + "/icons/book_mark.png"
+HISTORY_DEFAULT_ICON = os.getcwd() + "/icons/history.png"
 
 # 各种中英文的符号字符，在做拼音转换的时候会去除符号字符
 SYMBOL = u'~`!#$%^&*()_+-=|\';":/.,?><~·！@#￥%……&*（）——+-=“：’；、。，？》《{}【】[]'
@@ -75,7 +77,7 @@ class ChromeBookMarkSearch(Search):
             r = {"title": info["name"],
                  "url": info["url"],
                  "from": "bookmark",
-                 "icon": urls_dict.get(info["url"], "")
+                 "icon": urls_dict.get(info["url"], BOOK_MARK_DEFAULT_ICON)
                  }
             body_list.append(r)
         return body_list
@@ -153,7 +155,7 @@ class ChromeHistorySearch(Search):
             r = {"title": value[2],
                  "url": value[1],
                  "from": "history",
-                 "icon": urls_dict.get(value[1], "")
+                 "icon": urls_dict.get(value[1], HISTORY_DEFAULT_ICON)
                  }
             body_list.append(r)
         return body_list
