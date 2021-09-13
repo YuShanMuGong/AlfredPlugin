@@ -109,7 +109,7 @@ def __get_domain_str(url):
         url = url[https_index + len(HTTPS_PREFIX):]
     # www.baidu.com?dddfdasfsdafsdafasd
     # wap.baidu.com?dddfdasfsdafsdafasd
-    if url.find("www.") != -1 or url.find("wap.") != -1:
+    if url.find("www.") != -1 or url.find("wap.") != -1 or url.find("cloud."):
         first_pointer = url.find(".")
         url = url[first_pointer + 1:]
         second_pointer = url.find(".")
