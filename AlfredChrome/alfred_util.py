@@ -32,11 +32,9 @@ def get_alfred_out(infos):
     for item in infos:
         title = item["title"]
         url = item["url"]
-        icon = item.get("icon")
-        default_icon = {"type": "filetype", "path": "public.png"}
+        icon = item.get("icon", "")
         sub_title = __get_sub_title(item.get("from", ""), url)
-        if icon:
-            default_icon = {"type": "png", "path": icon}
+        default_icon = {"type": "png", "path": icon}
         result.append(
             {
                 "type": "default",
@@ -59,15 +57,18 @@ def __get_sub_title(data_from, url):
 
 
 # [[{},{}],[{}]] -> [{},{},{}]
+# 按照url维度去重
 def merge_result(result_lists):
     # 用于去除重复Key
     result_dict = collections.OrderedDict()
 
     for li in result_lists:
         for item in li:
-            if type(item) != dict or "title" not in item:
+            url = item.get("url", "")
+            # 如果 title 不存在 或者 存在但是已经重复 则直接跳过
+            if type(item) != dict or not url or result_dict.has_key(url):
                 continue
-            result_dict[item["title"]] = item
+            result_dict[url] = item
     return result_dict.values()
 
 

@@ -2,6 +2,7 @@
 import io
 import os
 import sys
+import hashlib
 
 import chrome_util
 import urllib2
@@ -64,6 +65,7 @@ def __get_icon_from_internet(urls):
 
 
 # 从 Chrome 缓存中获取网页的 ICON
+# 先按照URL去找ICON，找不到再用domain兜底
 def __get_icon_from_chrome_cache(urls):
     icon_cache_path = __CACHE_PATH + "icons/"
     cache_folder = os.path.exists(icon_cache_path)
@@ -72,31 +74,76 @@ def __get_icon_from_chrome_cache(urls):
     result = {}
     with chrome_util.get_db_conn("Favicons", CHROME_BOOK_HISTORY_PATH) as conn:
         for url in urls:
-            domain = __get_domain_str(url)
-            path = icon_cache_path + domain + ".png"
-            if os.path.isfile(path) and os.path.getsize(path) > 0:
-                result[url] = path
-                continue
-            cursor = conn.cursor()
-            try:
-                cursor.execute(__get_icon_sql(domain))
-                rows = cursor.fetchall()
-                if not rows:
-                    continue
-                icon_data = rows[0][0]
-                with io.open(path, "ab+") as f:
-                    f.write(icon_data)
-                    f.flush()
-                    f.close()
-                result[url] = path
-            except Exception as e:
-                sys.stdout.write(str(e))
-                if os.path.exists(path):
-                    os.remove(path)
-                pass
-            finally:
-                cursor.close()
+            url_icon_path = __get_icon_from_url(url, conn)
+            if url_icon_path is not None:
+                result[url] = url_icon_path
+            else:
+                domain_icon_path = __get_icon_from_domain(url, conn)
+                if domain_icon_path is not None:
+                    result[url] = domain_icon_path
     return result
+
+
+def __get_icon_from_domain(domain, conn):
+    icon_cache_path = __CACHE_PATH + "icons/"
+    cache_folder = os.path.exists(icon_cache_path)
+    if not cache_folder:
+        os.makedirs(icon_cache_path)
+    path = icon_cache_path + hashlib.md5(domain).hexdigest() + ".png"
+    if os.path.isfile(path) and os.path.getsize(path) > 0:
+        # 如果从缓存中找到了，则直接put 进入result
+        return path
+    cursor = conn.cursor()
+    try:
+        cursor.execute(__get_domain_icon_sql(domain))
+        rows = cursor.fetchall()
+        # 找到了 icon，需要写进本地缓存
+        if rows:
+            icon_data = rows[0][0]
+            with io.open(path, "ab+") as f:
+                f.write(icon_data)
+                f.flush()
+                f.close()
+            return path
+    except Exception as e:
+        sys.stdout.write(str(e))
+        if os.path.exists(path):
+            os.remove(path)
+        pass
+    finally:
+        cursor.close()
+    return None
+
+
+def __get_icon_from_url(url, conn):
+    icon_cache_path = __CACHE_PATH + "icons/"
+    cache_folder = os.path.exists(icon_cache_path)
+    if not cache_folder:
+        os.makedirs(icon_cache_path)
+    path = icon_cache_path + hashlib.md5(url).hexdigest() + ".png"
+    if os.path.isfile(path) and os.path.getsize(path) > 0:
+        # 如果从缓存中找到了，则直接put 进入result
+        return path
+    cursor = conn.cursor()
+    try:
+        cursor.execute(__get_url_icon_sql(url))
+        rows = cursor.fetchall()
+        # 找到了 icon，需要写进本地缓存
+        if rows:
+            icon_data = rows[0][0]
+            with io.open(path, "ab+") as f:
+                f.write(icon_data)
+                f.flush()
+                f.close()
+            return path
+    except Exception as e:
+        sys.stdout.write(str(e))
+        if os.path.exists(path):
+            os.remove(path)
+        pass
+    finally:
+        cursor.close()
+    return None
 
 
 def __get_domain_str(url):
@@ -131,8 +178,19 @@ def __get_icon_search_sql(key):
     return sql.format(key)
 
 
-# 获取Icon的二进制数据
-def __get_icon_sql(key):
+# 获取URL对应的二进制数据
+def __get_url_icon_sql(key):
+    sql = """select b.image_data from icon_mapping a 
+    inner join favicon_bitmaps b 
+    on a.icon_id = b.icon_id
+    where a.page_url = "{0}"
+    order by (b.width * b.height) desc 
+    limit 1"""
+    return sql.format(key)
+
+
+# 获取域Icon的二进制数据
+def __get_domain_icon_sql(key):
     sql = """select b.image_data from favicons a 
     inner join favicon_bitmaps b
     on a.id = b.icon_id

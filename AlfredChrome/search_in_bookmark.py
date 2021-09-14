@@ -11,7 +11,6 @@ from pypinyin import pinyin, Style
 
 # Chrome 书签文件地址
 
-
 CHROME_PATH = "/Library/Application Support/Google/Chrome"
 
 CHROME_BOOK_MARK_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/Bookmarks"
@@ -140,12 +139,14 @@ class ChromeHistorySearch(Search):
             r1 = cursor.fetchall()
             for item in r1:
                 result[item[0]] = item
-            cursor.execute(self.__build_or_query_sql(words))
-            r2 = cursor.fetchall()
-            for item in r2:
-                key = item[0]
-                if not result.has_key(key):
-                    result[key] = item
+            # 只有当搜索关键字个数大于1的时候，才开启或查询
+            if len(words) > 1:
+                cursor.execute(self.__build_or_query_sql(words))
+                r2 = cursor.fetchall()
+                for item in r2:
+                    key = item[0]
+                    if not result.has_key(key):
+                        result[key] = item
         body_list = []
         urls = []
         for value in result.values():
@@ -184,7 +185,7 @@ class ChromeHistorySearch(Search):
 
 
 if __name__ == '__main__':
-    word = u"zujian"
+    word = u"ceshi"
     result1 = ChromeBookMarkSearch().find([word])
     result2 = ChromeHistorySearch().find([word])
     result = collections.OrderedDict()
