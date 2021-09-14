@@ -1,6 +1,7 @@
 # coding=utf-8
 import collections
 import json
+import os
 
 EMPTY_JSON = '{}'
 HTTP_PREFIX = "http://"
@@ -53,6 +54,8 @@ def __get_sub_title(data_from, url):
         return u"来自书签 " + url_title
     if data_from == "history" or data_from == u"history":
         return u"来自历史记录 " + url_title
+    if data_from == "hint" or data_from == u"hint":
+        return u"来自推荐 " + url_title
     return "未知来源 " + url_title
 
 
@@ -86,6 +89,17 @@ def __get_domain_url(url):
         return url[0:separated_index]
     else:
         return url[0:25]
+
+
+# 获取默认搜索引擎 Item
+def get_default_search_item(words):
+    key = ",".join(words)
+    return {
+        "title": u"在谷歌中搜索" + key,
+        "url": "https://www.google.com.hk/search?q=" + key,
+        "from": "hint",
+        "icon": os.getcwd() + "/icons/google.png"
+    }
 
 
 if __name__ == "__main__":
