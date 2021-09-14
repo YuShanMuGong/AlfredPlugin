@@ -40,6 +40,7 @@ def get_word_pinyin(word):
     return res_str.lower().decode("utf-8")
 
 
+# 去除关键字中的标点符号 空格（中英文标点符号都会去除）
 def get_out_symbol(word):
     for c in SYMBOL:
         word = word.replace(c, "")
@@ -98,17 +99,21 @@ class ChromeBookMarkSearch(Search):
             self.__doFind(children, words, result_list)
 
     # 返回值 true 和 weight(int)
+    # 匹配关键字
+    # 主要会匹配 name 和 url，比对时候忽略大小写
     @staticmethod
     def __match_words(info, words):
         weight = 0
         for word in words:
+            lower_word = word.lower()
             if "name" in info:
-                name = info["name"]
-                if name.find(word) != -1:
+                name = info["name"].lower()
+                if name.find(lower_word) != -1:
                     weight += 1
 
             if "url" in info:
-                if info["url"].find(word) != -1:
+                url = info["url"].lower()
+                if url.find(lower_word) != -1:
                     weight += 1
         return {"match": weight > 0, "weight": weight}
 
