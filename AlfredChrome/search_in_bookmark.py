@@ -8,6 +8,8 @@ from abc import abstractmethod
 import collections
 import search_icon
 from pypinyin import pinyin, Style
+import time
+import config
 
 # Chrome 书签文件地址
 
@@ -137,13 +139,17 @@ class ChromeBookMarkSearch(Search):
 class ChromeHistorySearch(Search):
 
     def find(self, words):
+        start_time = time.time() * 1000
         result = collections.OrderedDict()
         with chrome_util.get_db_conn("History", CHROME_BOOK_HISTORY_PATH) as conn:
+            get_db_coon_time = time.time() * 1000
             cursor = conn.cursor()
             cursor.execute(self.__build_and_query_sql(words))
             r1 = cursor.fetchall()
+            do_search_time = time.time() * 1000
             for item in r1:
                 result[item[0]] = item
+            end_and_search_time = time.time() * 1000
             # 只有当搜索关键字个数大于1的时候，才开启或查询
             if len(words) > 1:
                 cursor.execute(self.__build_or_query_sql(words))
@@ -152,11 +158,13 @@ class ChromeHistorySearch(Search):
                     key = item[0]
                     if not result.has_key(key):
                         result[key] = item
+            end_or_search_time = time.time() * 1000
         body_list = []
         urls = []
         for value in result.values():
             urls.append(value[1])
         urls_dict = search_icon.get_domain_icon(urls)
+        search_icon_time = time.time() * 1000
         for value in result.values():
             r = {"title": value[2],
                  "url": value[1],
@@ -164,28 +172,36 @@ class ChromeHistorySearch(Search):
                  "icon": urls_dict.get(value[1], HISTORY_DEFAULT_ICON)
                  }
             body_list.append(r)
+        end_time = time.time() * 1000
+        if config.IS_DEBUG_MODE:
+            print("and_search_time={0},or_search_time={1},search_icon_time={2},func_end_time={3}".format(end_and_search_time - start_time,
+                  end_or_search_time - end_and_search_time ,
+                 search_icon_time - end_or_search_time,
+                  end_time - start_time))
+            print("db_conn_time={0},execute_time={1}".format(get_db_coon_time - start_time,
+                                                             do_search_time - get_db_coon_time))
         return body_list
 
     def __build_and_query_sql(self, words):
         condition = ""
         is_first = True
         for word in words:
+            word = word.lower()
             if not is_first:
                 condition = condition + " and "
             is_first = False
-            condition = condition + "(lower(title) like '%" + word.lower() + "%')"
-
+            condition = condition + "(lower(title) like '%" + word + "%' or lower(url) like '%" + word + "%')"
         return "SELECT * from urls WHERE (" + condition + ") ORDER BY visit_count desc , last_visit_time desc limit 20"
 
     def __build_or_query_sql(self, words):
         condition = ""
         is_first = True
         for word in words:
+            word = word.lower()
             if not is_first:
                 condition = condition + " or "
             is_first = False
-            condition = condition + "(lower(title) like '%" + word.lower() + "%')"
-
+            condition = condition + "(lower(title) like '%" + word + "%' or lower(url) like '%" + word + "%')"
         return "SELECT * from urls WHERE (" + condition + ") ORDER BY visit_count desc , last_visit_time desc limit 20"
 
 
