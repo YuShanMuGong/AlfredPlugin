@@ -49,7 +49,9 @@ def get_alfred_out(infos):
 
 
 def __get_sub_title(data_from, url):
-    url_title = __get_domain_url(url)
+    # sub_title 显示完整链接
+    # url_title = __get_domain_url(url)
+    url_title = url
     if data_from == "bookmark" or data_from == u"bookmark":
         return u"来自书签 " + url_title
     if data_from == "history" or data_from == u"history":
@@ -100,7 +102,6 @@ def get_default_search_item(words):
         "from": "hint",
         "icon": os.getcwd() + "/icons/google.png"
     }
-
 
 if __name__ == "__main__":
     test_infos = [{"url": "baidu.com", "title": "baidu"}]

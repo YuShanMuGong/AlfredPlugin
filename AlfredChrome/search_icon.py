@@ -3,9 +3,11 @@ import io
 import os
 import sys
 import hashlib
+import time
 
 import chrome_util
 import urllib2
+import config
 
 HTTP_PREFIX = "http://"
 HTTPS_PREFIX = "https://"
@@ -19,7 +21,12 @@ __CACHE_PATH = os.path.expanduser("~") + "/logs/alfred_caches/"
 
 # 返回值 [{url,icon}]
 def get_domain_icon(urls):
-    return __get_icon_from_chrome_cache(urls)
+    start_time = time.time() * 1000
+    result = __get_icon_from_chrome_cache(urls)
+    end_time = time.time() * 1000
+    if config.IS_DEBUG_MODE:
+        print "get_urls_icon===time={0}".format(end_time - start_time)
+    return result
 
 
 def __get_icon_from_internet(urls):
@@ -72,23 +79,48 @@ def __get_icon_from_chrome_cache(urls):
     if not cache_folder:
         os.makedirs(icon_cache_path)
     result = {}
+    cache_result = __get_icon_by_url_from_cache(urls)
+    result = dict(result.items() + cache_result[0].items())
+    not_cache_urls = cache_result[1]
+    # 都已经缓存了，直接返回即可
+    if not not_cache_urls:
+        return result
+
     with chrome_util.get_db_conn("Favicons", CHROME_BOOK_HISTORY_PATH) as conn:
-        for url in urls:
-            url_icon_path = __get_icon_from_url(url, conn)
-            if url_icon_path is not None:
-                result[url] = url_icon_path
+        url_imgs_map = __get_icon_by_urls(not_cache_urls, conn)
+        not_found_urls = []
+        for url in not_cache_urls:
+            # 如果找到了图片
+            if url in url_imgs_map:
+                result[url] = url_imgs_map[url]
             else:
-                domain_icon_path = __get_icon_from_domain(url, conn)
-                if domain_icon_path is not None:
-                    result[url] = domain_icon_path
+                not_found_urls.append(url)
+        # 不查domain icon 兜底了
+        # for url in not_found_urls:
+        #     domain_icon_path = __get_icon_by_domain(url, conn)
+        #     if domain_icon_path is not None:
+        #         result[url] = domain_icon_path
     return result
 
 
-def __get_icon_from_domain(domain, conn):
+# 从缓存中读取URL ICON
+# 返回值 {key1:value1,key2:values},[not_match_key...]
+def __get_icon_by_url_from_cache(keys):
     icon_cache_path = __CACHE_PATH + "icons/"
-    cache_folder = os.path.exists(icon_cache_path)
-    if not cache_folder:
-        os.makedirs(icon_cache_path)
+    icon_map = {}
+    not_match_keys = []
+    for key in keys:
+        path = icon_cache_path + hashlib.md5(key).hexdigest() + ".png"
+        if os.path.isfile(path) and os.path.getsize(path) > 0:
+            # 如果从缓存中找到了
+            icon_map[key] = path
+        else:
+            not_match_keys.append(key)
+    return (icon_map, not_match_keys)
+
+
+def __get_icon_by_domain(domain, conn):
+    icon_cache_path = __CACHE_PATH + "icons/"
     path = icon_cache_path + hashlib.md5(domain).hexdigest() + ".png"
     if os.path.isfile(path) and os.path.getsize(path) > 0:
         # 如果从缓存中找到了，则直接put 进入result
@@ -115,15 +147,34 @@ def __get_icon_from_domain(domain, conn):
     return None
 
 
-def __get_icon_from_url(url, conn):
+# 返回值{url:path,....}
+def __get_icon_by_urls(urls, conn):
+    cursor = conn.cursor()
     icon_cache_path = __CACHE_PATH + "icons/"
-    cache_folder = os.path.exists(icon_cache_path)
-    if not cache_folder:
-        os.makedirs(icon_cache_path)
+    result = {}
+    try:
+        cursor.execute(__get_urls_icon_sql(urls))
+        rows = cursor.fetchall()
+        # 找到了 icon，需要写进本地缓存
+        for row in rows:
+            (url, img) = row
+            path = icon_cache_path + hashlib.md5(url).hexdigest() + ".png"
+            with io.open(path, "ab+") as f:
+                f.write(img)
+                f.flush()
+                f.close()
+            result[url] = path
+    except Exception as e:
+        sys.stdout.write(str(e))
+        pass
+    finally:
+        cursor.close()
+    return result
+
+
+def __get_icon_by_url(url, conn):
+    icon_cache_path = __CACHE_PATH + "icons/"
     path = icon_cache_path + hashlib.md5(url).hexdigest() + ".png"
-    if os.path.isfile(path) and os.path.getsize(path) > 0:
-        # 如果从缓存中找到了，则直接put 进入result
-        return path
     cursor = conn.cursor()
     try:
         cursor.execute(__get_url_icon_sql(url))
@@ -187,6 +238,23 @@ def __get_url_icon_sql(key):
     order by (b.width * b.height) desc 
     limit 1"""
     return sql.format(key)
+
+
+# 获取URLs对应的二进制数据
+def __get_urls_icon_sql(keys):
+    condition = ""
+    is_first = True
+    for key in keys:
+        if not is_first:
+            condition += " , "
+        is_first = False
+        condition += "'{0}'".format(key)
+    sql = """select page_url as url, b.image_data as image from icon_mapping a 
+    inner join favicon_bitmaps b 
+    on a.icon_id = b.icon_id
+    where a.page_url in ({0})
+    """
+    return sql.format(condition)
 
 
 # 获取域Icon的二进制数据

@@ -34,8 +34,7 @@ def do_search(words):
         ))
     return alfred_util.get_alfred_out(merged_result)
 
-
-if __name__ == "__main__":
+def do_main():
     word = sys.argv[1].lstrip().strip()
     # 按照空格分隔成List
     words = word.decode("utf-8").split(" ")
@@ -47,3 +46,6 @@ if __name__ == "__main__":
         sys.stdout.write(result)
     sys.stdout.flush()
     exit(0)
+
+if __name__ == "__main__":
+    do_main()
