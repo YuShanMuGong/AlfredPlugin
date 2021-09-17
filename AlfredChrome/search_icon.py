@@ -95,11 +95,11 @@ def __get_icon_from_chrome_cache(urls):
                 result[url] = url_imgs_map[url]
             else:
                 not_found_urls.append(url)
-        # 不查domain icon 兜底了
-        # for url in not_found_urls:
-        #     domain_icon_path = __get_icon_by_domain(url, conn)
-        #     if domain_icon_path is not None:
-        #         result[url] = domain_icon_path
+        # domain icon 兜底
+        for url in not_found_urls:
+            domain_icon_path = __get_icon_by_domain(url, conn)
+            if domain_icon_path is not None:
+                result[url] = domain_icon_path
     return result
 
 
