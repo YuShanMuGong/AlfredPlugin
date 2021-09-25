@@ -34,18 +34,24 @@ def do_search(words):
         ))
     return alfred_util.get_alfred_out(merged_result)
 
-def do_main():
-    word = sys.argv[1].lstrip().strip()
+
+def do_main(word):
+    word = word.lstrip().strip()
     # 按照空格分隔成List
-    words = word.decode("utf-8").split(" ")
+    words = word.split(" ")
     # 搜索时候要去除List中的空元素，因为中间可能有多个连续的空格
     result = do_search(list(filter(lambda x: x != '', words)))
+    if config.IS_DEBUG_MODE:
+        return result.decode("unicode_escape").encode("utf-8")
+    else:
+        return result
+
+
+if __name__ == "__main__":
+    result = do_main(sys.argv[1].decode("utf-8"))
     if config.IS_DEBUG_MODE:
         sys.stdout.write(result.decode("unicode_escape").encode("utf-8"))
     else:
         sys.stdout.write(result)
     sys.stdout.flush()
     exit(0)
-
-if __name__ == "__main__":
-    do_main()
