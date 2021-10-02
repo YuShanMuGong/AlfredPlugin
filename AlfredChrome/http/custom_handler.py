@@ -13,13 +13,57 @@ sys.path.append('../')
 from AlfredChrome import alfred_main
 
 
-class CustomHttpHandler(SimpleHTTPRequestHandler):
+class CustomBizHandler:
 
-    def __init__(self, request, client_address, server):
-        SimpleHTTPRequestHandler.__init__(self, request, client_address, server)
-        self.shutdownHandler = ShutdownHandler(server)
+    @abstractmethod
+    def handle(self, server, content):
+        pass
+
+
+class DoSearchHandler(CustomBizHandler):
+
+    def handle(self, server, content):
+        keyword = content["keyword"]
+        return alfred_main.do_main(keyword)
+
+
+# 健康检查
+class CheckHealthHanlder(CustomBizHandler):
+
+    def handle(self, server, content):
+        return "success"
+
+
+# 手动关闭服务
+class ShutdownHandler(CustomBizHandler):
+
+    def handle(self, server, content):
+        print("server start shutdown...")
+        # server.shutdown()
+        print("server shutdown complete...")
+        return "shutdown complete"
+
+
+class HandlerFactory(object):
+
+    def __init__(self):
         self.doSearchHandler = DoSearchHandler()
         self.checkHealthHandler = CheckHealthHanlder()
+        self.shutdownHandler = ShutdownHandler()
+
+    def get_handler(self, path):
+        if path == "/do_search":
+            return self.doSearchHandler
+        if path == "/check_health":
+            return self.checkHealthHandler
+        if path == "/shutdown":
+            return self.shutdownHandler
+        return None
+
+
+handleFactory = HandlerFactory()
+
+class CustomHttpHandler(SimpleHTTPRequestHandler):
 
     def send_datas(self, content):
         # 指定返回编码
@@ -37,64 +81,32 @@ class CustomHttpHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         shutil.copyfileobj(f, self.wfile)
 
+    # get 方法传递的参数 都忽略
     def do_GET(self):
         path = urllib.unquote(self.path)
-        print http_util.get_mapping_path(path)
-        self.send_datas(u"你好世界")
+        path = http_util.get_mapping_path(path)
+        handler = handleFactory.get_handler(path)
+        if handler is None:
+            self.send_datas(u"找不到页面")
+            return
+        res_obj = handler.handle(self, None)
+        if type(res_obj) == str or type(res_obj) == unicode:
+            self.send_datas(res_obj)
+        else:
+            self.send_datas(json.dumps(res_obj))
 
     def do_POST(self):
-        handler = ROUTE_CONFIG.get(self.path, None)
+        handler = handleFactory.get_handler(self.path)
         if handler is None:
             self.send_datas(u"找不到页面")
             return
         start_time = time.time() * 1000
         content_length = int(self.headers['Content-Length'])
         content = urllib.unquote(self.rfile.read(content_length))
-        res_obj = handler.handle(json.loads(content))
+        res_obj = handler.handle(self, json.loads(content))
         if type(res_obj) == str or type(res_obj) == unicode:
             self.send_datas(res_obj)
         else:
             self.send_datas(json.dumps(res_obj))
         end_time = time.time() * 1000
         print "http invoke {} , rt={}".format(self.path, end_time - start_time)
-
-    def __get_request_handler(self, path):
-        pass
-
-
-class CustomBizHandler:
-
-    @abstractmethod
-    def handle(self, content):
-        pass
-
-
-class DoSearchHandler(CustomBizHandler):
-
-    def handle(self, content):
-        keyword = content["keyword"]
-        return alfred_main.do_main(keyword)
-
-
-# 健康检查
-class CheckHealthHanlder(CustomBizHandler):
-
-    def handle(self, content):
-        return "success"
-
-
-# 手动关闭服务
-class ShutdownHandler(CustomBizHandler):
-
-    def __init__(self, server):
-        self.server = server
-
-    def handle(self, content):
-        print("server start shutdown...")
-        self.server.shutdown()
-        print("server shutdown complete...")
-
-
-ROUTE_CONFIG = {
-    "/do_search": DoSearchHandler()
-}
