@@ -18,6 +18,9 @@ CHROME_BOOK_MARK_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default/
 CHROME_BOOK_HISTORY_PATH = os.path.expanduser("~") + "/" + CHROME_PATH + "/Default"
 __CACHE_PATH = os.path.expanduser("~") + "/logs/alfred_caches/"
 
+# CHROME_BOOK_MARK_PATH = os.getcwd() + "/" + CHROME_PATH + "/Default/Bookmarks"
+# CHROME_BOOK_HISTORY_PATH = os.getcwd() + "/" + CHROME_PATH + "/Default"
+# __CACHE_PATH = os.getcwd() + "/logs/alfred_caches/"
 
 # 返回值 [{url,icon}]
 def get_domain_icon(urls):

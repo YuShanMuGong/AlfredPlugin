@@ -1,0 +1,40 @@
+/Users/xuesong/Documents/AlfredPlugin/AlfredChrome/site-packages
+ServerStateFileWriteListener====on_active
+127.0.0.1 - - [31/Oct/2021 22:35:41] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=166.275146484
+127.0.0.1 - - [31/Oct/2021 22:35:43] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=61.8137207031
+127.0.0.1 - - [31/Oct/2021 22:35:43] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=46.5952148438
+127.0.0.1 - - [31/Oct/2021 22:35:44] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=55.5180664062
+127.0.0.1 - - [31/Oct/2021 22:35:45] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=40.9409179688
+127.0.0.1 - - [31/Oct/2021 22:35:45] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=46.291015625
+127.0.0.1 - - [31/Oct/2021 22:35:45] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=35.9099121094
+127.0.0.1 - - [31/Oct/2021 22:35:47] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=114.997070312
+127.0.0.1 - - [31/Oct/2021 22:35:47] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=45.3830566406
+127.0.0.1 - - [31/Oct/2021 22:35:48] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=41.6379394531
+127.0.0.1 - - [31/Oct/2021 22:35:48] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=48.2548828125
+127.0.0.1 - - [31/Oct/2021 22:35:48] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=42.3571777344
+127.0.0.1 - - [31/Oct/2021 22:35:48] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=32.4291992188
+127.0.0.1 - - [31/Oct/2021 22:35:49] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=55.837890625
+127.0.0.1 - - [31/Oct/2021 22:35:49] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=39.5090332031
+127.0.0.1 - - [31/Oct/2021 22:35:50] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=57.7641601562
+127.0.0.1 - - [31/Oct/2021 22:35:50] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=54.0180664062
+127.0.0.1 - - [31/Oct/2021 22:35:51] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=41.8010253906
+127.0.0.1 - - [31/Oct/2021 22:35:51] "POST /do_search HTTP/1.1" 200 -
+http invoke /do_search , rt=40.3801269531

@@ -7,10 +7,9 @@ import time
 import urllib
 import http_util
 from abc import abstractmethod
-import sys
 
-sys.path.append('../')
-from AlfredChrome import alfred_main
+# sys.path.append('../')
+import alfred_main
 
 
 class CustomBizHandler:

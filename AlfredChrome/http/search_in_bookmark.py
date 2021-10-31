@@ -3,6 +3,8 @@
 import json
 import io
 import os
+import sys
+
 import chrome_util
 from abc import abstractmethod
 import collections
